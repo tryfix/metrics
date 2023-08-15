@@ -58,7 +58,7 @@ func (r *prometheusReporter) Counter(conf MetricConf) Counter {
 
 	promCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
@@ -89,7 +89,7 @@ func (r *prometheusReporter) Gauge(conf MetricConf) Gauge {
 
 	promGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
@@ -117,7 +117,7 @@ func (r *prometheusReporter) GaugeFunc(conf MetricConf, f func() float64) GaugeF
 
 	promGauge := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
@@ -140,7 +140,6 @@ func (r *prometheusReporter) GaugeFunc(conf MetricConf, f func() float64) GaugeF
 }
 
 func (r *prometheusReporter) Observer(conf MetricConf) Observer {
-
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
@@ -150,9 +149,10 @@ func (r *prometheusReporter) Observer(conf MetricConf) Observer {
 
 	promObserver := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
+		Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
 	}, conf.Labels)
 
@@ -172,7 +172,6 @@ func (r *prometheusReporter) Observer(conf MetricConf) Observer {
 }
 
 func (r *prometheusReporter) Summary(conf MetricConf) Observer {
-
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
@@ -182,9 +181,10 @@ func (r *prometheusReporter) Summary(conf MetricConf) Observer {
 
 	promObserver := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
+		Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
 	}, conf.Labels)
 
@@ -214,7 +214,7 @@ func (r *prometheusReporter) Histogram(conf MetricConf) Observer {
 
 	promObserver := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:        conf.Path,
-		Help:        conf.Path,
+		Help:        conf.Help,
 		Namespace:   r.namespace,
 		Subsystem:   r.subSystem,
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
