@@ -1,86 +1,67 @@
 package main
 
 import (
-	"github.com/tryfix/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tryfix/metrics"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
 
 func main() {
-
 	reporter := metrics.PrometheusReporter(metrics.ReporterConf{
-		System: `namespace`,
+		System:    `namespace`,
 		Subsystem: `subsystem`,
 		ConstLabels: map[string]string{
-			`score`:`100`,
-			`score_type`:`other`,
-	},
+			`score`:      `100`,
+			`score_type`: `other`,
+		},
 	})
 
 	scoreCounter := reporter.Counter(metrics.MetricConf{
-		Path: `score_count`,
-		Labels:[]string{`type`},
+		Path:   `score_count`,
+		Labels: []string{`type`},
+		Help:   `Example score_count help`,
 	})
-
-
 
 	subScoreReporter := reporter.Reporter(metrics.ReporterConf{
 		ConstLabels: map[string]string{
-			`sub_score`:`2000`,
+			`sub_score`: `2000`,
 		},
 	})
 
 	subScoreCounter := subScoreReporter.Counter(metrics.MetricConf{
-		Path: `sub_score_count`,
-		Labels:[]string{`attr_1`, `attr_2`},
+		Path:   `sub_score_count`,
+		Labels: []string{`attr_1`, `attr_2`},
+		Help:   `Example sub_score_count help`,
 	})
 
-	thirddScoreReporter := subScoreReporter.Reporter(metrics.ReporterConf{
+	subScoreLatency := subScoreReporter.Observer(metrics.MetricConf{
+		Path:   `sub_score_latency_milliseconds`,
+		Labels: []string{`type`},
+		Help:   `Example sub_score_latency in Milliseconds`,
+	})
+
+	thirdScoreReporter := subScoreReporter.Reporter(metrics.ReporterConf{
 		ConstLabels: map[string]string{
-			`third_sub_score`:`99999`,
+			`third_sub_score`: `99999`,
 		},
 	})
 
-	thirddScoreCounter := thirddScoreReporter.Counter(metrics.MetricConf{
-		Path: `third_sub_score_count`,
-		Labels:[]string{`attr_1`},
+	thirdScoreCounter := thirdScoreReporter.Counter(metrics.MetricConf{
+		Path:   `third_sub_score_count`,
+		Labels: []string{`attr_1`},
 	})
 
-	//r2.GaugeFunc(metrics.MetricConf{
-	//	Path: `test_count_rr`,
-	//	Labels:[]string{`attr_1`, `attr_2`},
-	//}, func() float64 {
-	//	return 11.11
-	//})
-
-	//r3 := subScoreReportor.Reporter(metrics.ReporterConf{
-	//	Subsystem: `level_two`,
-	//	ConstLabels: map[string]string{
-	//		`const_val_1_1_1`:`111`,
-	//		`const_val2_2_2`:`222`,
-	//	},
-	//})
-	//
-	//c3 := r3.Counter(metrics.MetricConf{
-	//	Path: `test_count`,
-	//	Labels:[]string{`attr_1`, `attr_2`},
-	//})
-	//
-	//eee := r3.GaugeFunc(metrics.MetricConf{
-	//	Path: `test_count_rr`,
-	//	Labels:[]string{`attr_1`, `attr_2`},
-	//}, func() float64 {
-	//	return 33.11
-	//})
-
-
-
-
 	go func() {
+		last := time.Now()
 		for {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+
+			subScoreLatency.Observe(float64(time.Since(last).Milliseconds()), map[string]string{`type`: `type1`})
+			last = time.Now()
+
 			scoreCounter.Count(1, map[string]string{
 				`type`: `major`,
 			})
@@ -90,7 +71,7 @@ func main() {
 				`attr_2`: `val 2`,
 			})
 
-			thirddScoreCounter.Count(1, map[string]string{
+			thirdScoreCounter.Count(1, map[string]string{
 				`attr_1`: `val 1`,
 			})
 		}
@@ -100,7 +81,7 @@ func main() {
 
 	r.Handle(`/metrics`, promhttp.Handler())
 
-	if err := http.ListenAndServe(`:9999`, r); err != nil{
+	if err := http.ListenAndServe(`:9999`, r); err != nil {
 		log.Fatal(err)
 	}
 }

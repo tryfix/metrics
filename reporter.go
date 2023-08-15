@@ -3,6 +3,7 @@ package metrics
 type MetricConf struct {
 	Path        string
 	Labels      []string
+	Help        string
 	ConstLabels map[string]string
 }
 
