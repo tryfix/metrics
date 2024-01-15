@@ -264,7 +264,7 @@ type prometheusGauge struct {
 }
 
 func (g *prometheusGauge) Count(value float64, lbs map[string]string) {
-	g.gauge.With(lbs).Set(value)
+	g.gauge.With(lbs).Add(value)
 }
 
 func (g *prometheusGauge) UnRegister() {
