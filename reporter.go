@@ -35,6 +35,7 @@ type Counter interface {
 type Gauge interface {
 	Collector
 	Count(value float64, lbs map[string]string)
+	Set(value float64, lbs map[string]string)
 }
 
 type GaugeFunc interface {

@@ -28,6 +28,7 @@ func (noopCounter) UnRegister()                                {}
 type noopGauge struct{}
 
 func (noopGauge) Count(value float64, lbs map[string]string) {}
+func (noopGauge) Set(value float64, lbs map[string]string)   {}
 func (noopGauge) UnRegister()                                {}
 
 type noopGaugeFunc struct{}
