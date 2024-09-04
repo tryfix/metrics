@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tryfix/metrics"
+	"github.com/tryfix/metrics/v2"
 	"log"
 	"math/rand"
 	"net/http"
