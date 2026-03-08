@@ -22,14 +22,14 @@ func (noopReporter) UnRegister(metrics string) {}
 
 type noopCounter struct{}
 
-func (noopCounter) Count(value float64, lbs map[string]string) {}
-func (noopCounter) UnRegister()                                {}
+func (noopCounter) Count(value float64, lbs map[string]string, opts ...RecordOption) {}
+func (noopCounter) UnRegister()                                                      {}
 
 type noopGauge struct{}
 
-func (noopGauge) Count(value float64, lbs map[string]string) {}
-func (noopGauge) Set(value float64, lbs map[string]string)   {}
-func (noopGauge) UnRegister()                                {}
+func (noopGauge) Count(value float64, lbs map[string]string, opts ...RecordOption) {}
+func (noopGauge) Set(value float64, lbs map[string]string, opts ...RecordOption)   {}
+func (noopGauge) UnRegister()                                                      {}
 
 type noopGaugeFunc struct{}
 
@@ -37,5 +37,5 @@ func (noopGaugeFunc) UnRegister() {}
 
 type noopObserver struct{}
 
-func (noopObserver) Observe(value float64, lbs map[string]string) {}
-func (noopObserver) UnRegister()                                  {}
+func (noopObserver) Observe(value float64, lbs map[string]string, opts ...RecordOption) {}
+func (noopObserver) UnRegister()                                                        {}

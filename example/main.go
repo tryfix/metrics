@@ -1,16 +1,55 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tryfix/metrics/v2"
+	"context"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tryfix/metrics/v2"
+	"go.opentelemetry.io/otel"
+	promexporter "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func main() {
-	reporter := metrics.PrometheusReporter(metrics.ReporterConf{
+	// Set up trace provider with stdout exporter
+	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	traceProvider := sdktrace.NewTracerProvider(sdktrace.WithBatcher(traceExporter))
+	otel.SetTracerProvider(traceProvider)
+
+	// Set up the OTEL Prometheus exporter and MeterProvider
+	metricExporter, err := promexporter.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(metricExporter),
+		// Use exponential histograms — auto-scaling buckets, no manual bucket config needed
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{Kind: sdkmetric.InstrumentKindHistogram},
+			sdkmetric.Stream{
+				Aggregation: sdkmetric.AggregationBase2ExponentialHistogram{
+					MaxSize:  160,
+					MaxScale: 20,
+				},
+			},
+		)),
+	)
+	otel.SetMeterProvider(meterProvider)
+
+	tracer := otel.Tracer("example")
+
+	reporter := metrics.OTELReporter(metrics.ReporterConf{
 		System:    `namespace`,
 		Subsystem: `subsystem`,
 		ConstLabels: map[string]string{
@@ -59,29 +98,39 @@ func main() {
 		for {
 			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
-			subScoreLatency.Observe(float64(time.Since(last).Milliseconds()), map[string]string{`type`: `type1`})
+			// Create a trace span and pass its context to metrics
+			ctx, span := tracer.Start(context.Background(), "process_scores")
+
+			subScoreLatency.Observe(float64(time.Since(last).Milliseconds()), map[string]string{`type`: `type1`}, metrics.WithContext(ctx))
 			last = time.Now()
 
 			scoreCounter.Count(1, map[string]string{
 				`type`: `major`,
-			})
+			}, metrics.WithContext(ctx))
 
 			subScoreCounter.Count(1, map[string]string{
 				`attr_1`: `val 1`,
 				`attr_2`: `val 2`,
-			})
+			}, metrics.WithContext(ctx))
 
 			thirdScoreCounter.Count(1, map[string]string{
 				`attr_1`: `val 1`,
-			})
+			}, metrics.WithContext(ctx))
+
+			span.End()
 		}
 	}()
 
 	r := http.NewServeMux()
 
-	r.Handle(`/metrics`, promhttp.Handler())
+	r.Handle(`/metrics`, promhttp.HandlerFor(
+		prometheus.DefaultGatherer,
+		promhttp.HandlerOpts{EnableOpenMetrics: true},
+	))
 
-	if err := http.ListenAndServe(`:9999`, r); err != nil {
+	host := `:9999`
+	log.Printf(`metrics endpoint can be accessed from %s/metrics`, host)
+	if err := http.ListenAndServe(host, r); err != nil {
 		log.Fatal(err)
 	}
 }
