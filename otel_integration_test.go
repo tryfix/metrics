@@ -415,7 +415,7 @@ func TestExemplarsScrape(t *testing.T) {
 	span2.End()
 
 	// Phase 5: Start Prometheus configured to scrape our metrics server
-	// On Docker Desktop, host.docker.internal resolves to the host machine
+	// Use testcontainers.HostInternal so this works on both Docker Desktop and Linux CI
 	scrapeConfig := fmt.Sprintf(`
 global:
   scrape_interval: 2s
@@ -428,8 +428,8 @@ scrape_configs:
     scrape_interval: 2s
     metrics_path: /metrics
     static_configs:
-      - targets: ['host.docker.internal:%d']
-`, metricsPort)
+      - targets: ['%s:%d']
+`, testcontainers.HostInternal, metricsPort)
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -446,7 +446,8 @@ scrape_configs:
 					FileMode:          0o644,
 				},
 			},
-			WaitingFor: wait.ForHTTP("/-/ready").WithPort("9090/tcp").WithStartupTimeout(30 * time.Second),
+			HostAccessPorts: []int{metricsPort},
+			WaitingFor:      wait.ForHTTP("/-/ready").WithPort("9090/tcp").WithStartupTimeout(30 * time.Second),
 		},
 		Started: true,
 	})
@@ -617,6 +618,7 @@ func TestNativeHistogramExemplars(t *testing.T) {
 	}
 
 	// Phase 5: Start Prometheus with PrometheusProto scrape protocol + native histograms
+	// Use testcontainers.HostInternal so this works on both Docker Desktop and Linux CI
 	scrapeConfig := fmt.Sprintf(`
 global:
   scrape_interval: 2s
@@ -629,8 +631,8 @@ scrape_configs:
     scrape_interval: 2s
     metrics_path: /metrics
     static_configs:
-      - targets: ['host.docker.internal:%d']
-`, metricsPort)
+      - targets: ['%s:%d']
+`, testcontainers.HostInternal, metricsPort)
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -647,7 +649,8 @@ scrape_configs:
 					FileMode:          0o644,
 				},
 			},
-			WaitingFor: wait.ForHTTP("/-/ready").WithPort("9090/tcp").WithStartupTimeout(30 * time.Second),
+			HostAccessPorts: []int{metricsPort},
+			WaitingFor:      wait.ForHTTP("/-/ready").WithPort("9090/tcp").WithStartupTimeout(30 * time.Second),
 		},
 		Started: true,
 	})
