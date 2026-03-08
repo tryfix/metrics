@@ -38,7 +38,7 @@ func startPrometheus(t *testing.T, ctx context.Context) string {
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "prom/prometheus:latest",
+			Image:        "prom/prometheus:v3.0.0",
 			ExposedPorts: []string{"9090/tcp"},
 			Cmd: []string{
 				"--config.file=/etc/prometheus/prometheus.yml",
@@ -433,7 +433,7 @@ scrape_configs:
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "prom/prometheus:latest",
+			Image:        "prom/prometheus:v3.0.0",
 			ExposedPorts: []string{"9090/tcp"},
 			Cmd: []string{
 				"--config.file=/etc/prometheus/prometheus.yml",
@@ -636,7 +636,7 @@ scrape_configs:
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "prom/prometheus:latest",
+			Image:        "prom/prometheus:v3.0.0",
 			ExposedPorts: []string{"9090/tcp"},
 			Cmd: []string{
 				"--config.file=/etc/prometheus/prometheus.yml",
