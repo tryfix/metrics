@@ -2,13 +2,13 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type prometheusReporter struct {
 	registry             prometheus.Registerer
-	prefix               string
 	namespace, subSystem string
 	constLabels          map[string]string
 	availableMetrics     map[string]Collector
@@ -65,7 +65,9 @@ func (r *prometheusReporter) Counter(conf MetricConf) Counter {
 	}, conf.Labels)
 
 	if err := r.registry.Register(promCounter); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promCounter = registeredErr.ExistingCollector.(*prometheus.CounterVec)
+		} else {
 			panic(err)
 		}
 	}
@@ -96,7 +98,9 @@ func (r *prometheusReporter) Gauge(conf MetricConf) Gauge {
 	}, conf.Labels)
 
 	if err := r.registry.Register(promGauge); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promGauge = registeredErr.ExistingCollector.(*prometheus.GaugeVec)
+		} else {
 			panic(err)
 		}
 	}
@@ -124,7 +128,9 @@ func (r *prometheusReporter) GaugeFunc(conf MetricConf, f func() float64) GaugeF
 	}, f)
 
 	if err := r.registry.Register(promGauge); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promGauge = registeredErr.ExistingCollector.(prometheus.GaugeFunc)
+		} else {
 			panic(err)
 		}
 	}
@@ -157,7 +163,9 @@ func (r *prometheusReporter) Observer(conf MetricConf) Observer {
 	}, conf.Labels)
 
 	if err := r.registry.Register(promObserver); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promObserver = registeredErr.ExistingCollector.(*prometheus.SummaryVec)
+		} else {
 			panic(err)
 		}
 	}
@@ -189,7 +197,9 @@ func (r *prometheusReporter) Summary(conf MetricConf) Observer {
 	}, conf.Labels)
 
 	if err := r.registry.Register(promObserver); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promObserver = registeredErr.ExistingCollector.(*prometheus.SummaryVec)
+		} else {
 			panic(err)
 		}
 	}
@@ -221,7 +231,9 @@ func (r *prometheusReporter) Histogram(conf MetricConf) Observer {
 	}, conf.Labels)
 
 	if err := r.registry.Register(promObserver); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+		if registeredErr, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			promObserver = registeredErr.ExistingCollector.(*prometheus.HistogramVec)
+		} else {
 			panic(err)
 		}
 	}
@@ -251,7 +263,7 @@ type prometheusCounter struct {
 	counter *prometheus.CounterVec
 }
 
-func (c *prometheusCounter) Count(value float64, lbs map[string]string) {
+func (c *prometheusCounter) Count(value float64, lbs map[string]string, opts ...RecordOption) {
 	c.counter.With(lbs).Add(value)
 }
 
@@ -263,11 +275,11 @@ type prometheusGauge struct {
 	gauge *prometheus.GaugeVec
 }
 
-func (g *prometheusGauge) Count(value float64, lbs map[string]string) {
+func (g *prometheusGauge) Count(value float64, lbs map[string]string, opts ...RecordOption) {
 	g.gauge.With(lbs).Add(value)
 }
 
-func (g *prometheusGauge) Set(value float64, lbs map[string]string) {
+func (g *prometheusGauge) Set(value float64, lbs map[string]string, opts ...RecordOption) {
 	g.gauge.With(lbs).Set(value)
 }
 
@@ -287,7 +299,7 @@ type prometheusHistogram struct {
 	observer *prometheus.HistogramVec
 }
 
-func (c *prometheusHistogram) Observe(value float64, lbs map[string]string) {
+func (c *prometheusHistogram) Observe(value float64, lbs map[string]string, opts ...RecordOption) {
 	c.observer.With(lbs).Observe(value)
 }
 
@@ -299,7 +311,7 @@ type prometheusSummary struct {
 	observer *prometheus.SummaryVec
 }
 
-func (c *prometheusSummary) Observe(value float64, lbs map[string]string) {
+func (c *prometheusSummary) Observe(value float64, lbs map[string]string, opts ...RecordOption) {
 	c.observer.With(lbs).Observe(value)
 }
 
@@ -319,7 +331,7 @@ func mergeLabels(from map[string]string, to map[string]string) map[string]string
 	if to != nil {
 		for label, val := range to {
 			if _, ok := constLabels[label]; ok {
-				panic(fmt.Sprintf(`label %s already registred`, label))
+				panic(fmt.Sprintf(`label %s already registered`, label))
 			}
 			constLabels[label] = val
 		}
