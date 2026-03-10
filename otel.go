@@ -200,6 +200,9 @@ func (r *otelReporter) metricName(path string) string {
 	if r.namespace != "" {
 		return fmt.Sprintf("%s_%s", r.namespace, path)
 	}
+	if r.subSystem != "" {
+		return fmt.Sprintf("%s_%s", r.subSystem, path)
+	}
 	return path
 }
 
