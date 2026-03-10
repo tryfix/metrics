@@ -57,8 +57,10 @@ func OTELReporter(conf ReporterConf, opts ...OTELOption) Reporter {
 	}
 
 	meterName := conf.System
-	if conf.Subsystem != "" {
+	if conf.System != "" && conf.Subsystem != "" {
 		meterName = fmt.Sprintf("%s_%s", conf.System, conf.Subsystem)
+	} else if conf.Subsystem != "" {
+		meterName = conf.Subsystem
 	}
 
 	r := &otelReporter{
