@@ -91,13 +91,17 @@ func TestOTELMeterName(t *testing.T) {
 
 func TestOTELSubReporterPrefixing(t *testing.T) {
 	tests := []struct {
-		name     string
-		childSub string
-		path     string
-		wantName string
+		name      string
+		parentSys string
+		parentSub string
+		childSub  string
+		path      string
+		wantName  string
 	}{
-		{"with_child_subsystem", "child", "connections", "ns_sub_child_connections"},
-		{"no_child_subsystem", "", "connections", "ns_sub_connections"},
+		{"with_child_subsystem", "ns", "sub", "child", "connections", "ns_sub_child_connections"},
+		{"no_child_subsystem", "ns", "sub", "", "connections", "ns_sub_connections"},
+		{"empty_parent_with_child_sub", "", "", "child", "connections", "child_connections"},
+		{"empty_parent_sys_with_child_sub", "", "sub", "child", "connections", "sub_child_connections"},
 	}
 
 	for _, tt := range tests {
@@ -107,8 +111,8 @@ func TestOTELSubReporterPrefixing(t *testing.T) {
 			defer provider.Shutdown(context.Background())
 
 			parent := OTELReporter(ReporterConf{
-				System:    "ns",
-				Subsystem: "sub",
+				System:    tt.parentSys,
+				Subsystem: tt.parentSub,
 			}, WithMeterProvider(provider))
 
 			child := parent.Reporter(ReporterConf{Subsystem: tt.childSub})
@@ -158,20 +162,24 @@ func TestPrometheusMetricNamePrefixing(t *testing.T) {
 
 func TestPrometheusSubReporterPrefixing(t *testing.T) {
 	tests := []struct {
-		name     string
-		childSub string
-		path     string
-		wantName string
+		name      string
+		parentSys string
+		parentSub string
+		childSub  string
+		path      string
+		wantName  string
 	}{
-		{"with_child_subsystem", "child", "connections", "ns_sub_child_connections"},
-		{"no_child_subsystem", "", "connections", "ns_sub_connections"},
+		{"with_child_subsystem", "ns", "sub", "child", "psr_conn1", "ns_sub_child_psr_conn1"},
+		{"no_child_subsystem", "ns", "sub", "", "psr_conn2", "ns_sub_psr_conn2"},
+		{"empty_parent_with_child_sub", "", "", "child", "psr_conn3", "child_psr_conn3"},
+		{"empty_parent_sys_with_child_sub", "", "sub", "child", "psr_conn4", "sub_child_psr_conn4"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parent := PrometheusReporter(ReporterConf{
-				System:    "ns",
-				Subsystem: "sub",
+				System:    tt.parentSys,
+				Subsystem: tt.parentSub,
 			})
 
 			child := parent.Reporter(ReporterConf{Subsystem: tt.childSub})

@@ -82,8 +82,12 @@ func (r *otelReporter) Reporter(conf ReporterConf) Reporter {
 		Subsystem:   r.subSystem,
 		ConstLabels: mergeLabels(r.constLabels, conf.ConstLabels),
 	}
-	if conf.Subsystem != "" {
+	// Concatenate parent and child subsystems with "_" only when both are set.
+	// If the parent subsystem is empty, use the child's directly to avoid a leading underscore.
+	if r.subSystem != "" && conf.Subsystem != "" {
 		rConf.Subsystem = fmt.Sprintf("%s_%s", r.subSystem, conf.Subsystem)
+	} else if conf.Subsystem != "" {
+		rConf.Subsystem = conf.Subsystem
 	}
 	return OTELReporter(rConf, WithMeterProvider(r.meterProvider))
 }
