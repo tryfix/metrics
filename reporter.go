@@ -12,6 +12,9 @@ type MetricConf struct {
 	Help string
 	// ConstLabels are static key-value pairs attached to every observation of this metric.
 	ConstLabels map[string]string
+	// Unit is the metric unit following UCUM conventions (e.g. "ms", "By", "1").
+	// Used by the OTEL backend; ignored by Prometheus.
+	Unit string
 }
 
 // ReporterConf configures a Reporter instance.

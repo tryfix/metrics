@@ -99,6 +99,7 @@ func (r *otelReporter) Counter(conf MetricConf) Counter {
 	name := r.metricName(conf.Path)
 	counter, err := r.meter.Float64Counter(name,
 		metric.WithDescription(conf.Help),
+		metric.WithUnit(conf.Unit),
 	)
 	if err != nil {
 		panic(err)
@@ -124,6 +125,7 @@ func (r *otelReporter) Gauge(conf MetricConf) Gauge {
 
 	gauge, err := r.meter.Float64Gauge(name,
 		metric.WithDescription(conf.Help),
+		metric.WithUnit(conf.Unit),
 	)
 	if err != nil {
 		panic(err)
@@ -148,6 +150,7 @@ func (r *otelReporter) GaugeFunc(conf MetricConf, f func() float64) GaugeFunc {
 
 	_, err := r.meter.Float64ObservableGauge(name,
 		metric.WithDescription(conf.Help),
+		metric.WithUnit(conf.Unit),
 		metric.WithFloat64Callback(func(ctx context.Context, obs metric.Float64Observer) error {
 			obs.Observe(f(), metric.WithAttributes(constAttrs...))
 			return nil
@@ -173,6 +176,7 @@ func (r *otelReporter) Observer(conf MetricConf) Observer {
 	name := r.metricName(conf.Path)
 	histogram, err := r.meter.Float64Histogram(name,
 		metric.WithDescription(conf.Help),
+		metric.WithUnit(conf.Unit),
 	)
 	if err != nil {
 		panic(err)
